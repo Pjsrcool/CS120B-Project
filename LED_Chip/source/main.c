@@ -24,6 +24,62 @@ void ADC_init() {
     //        will trigger whenever the previous conversion completes
 }
 
+bool isLeftFoot() {
+    return ADC <= 48;
+}
+
+bool isRightFoot() {
+    return ADC >= 126;
+}
+
+unsigned char player1 = 0;
+unsigned char player1finish = 0;
+
+enum StepGamePlayer1 {Off, go, finish }
+int StepGamePlayer1(int state) {
+    static unsigned short currentDistance = 0;
+    static const unsigned short raceDistance = 20;
+
+    switch (state) {
+        case Off : 
+            if (player1 == 0) 
+                state = Off;
+            else {
+                player1finish = 0;
+                state = go;
+            }
+            break;
+        case go : 
+            if (currentDistance >= raceDistance)
+                state = finish;
+            else 
+                state = go;
+            break;
+        case finish :
+            state = Off;
+            break;
+        default : 
+            state = Off; 
+            break;
+    }
+
+    switch (state) {
+        case go : 
+            if (currentDistance < raceDistance) {
+                if (currentDistance%2 == 0 && isLeftFoot())
+                    currentDistance++;
+                else if (isRightFoot())
+                    currentDistance++;
+            }
+            break;
+        case finish:
+            player1finish = 1;
+            break;
+    }
+}
+
+
+
 unsigned char LCD_Text[];
 
 // writes Game text to the LCD Display
