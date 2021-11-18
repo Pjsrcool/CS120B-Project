@@ -27,7 +27,7 @@ unsigned long int findGCD(unsigned long int a, unsigned long int b)
 typedef struct task{
 	// Tasks should have members that include: state, period,
 	//a measurement of elapsed time, and a function pointer.
-	signed 	 char state; 		//Task's current state
+	int state; 		//Task's current state
 	unsigned long period; 		//Task period
 	unsigned long elapsedTime; 	//Time elapsed since last task tick
 	int (*TickFct)(int); 		//Task tick function
