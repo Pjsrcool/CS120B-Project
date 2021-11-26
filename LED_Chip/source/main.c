@@ -27,9 +27,7 @@ void ADC_init() {
 }
 
 unsigned char isLeftFoot() {
-    unsigned char value = (unsigned char) ADC;
-
-    return value <= 48;
+    unsigned long value =  ADC;
 
     if (value <= 48)
         return 1;
@@ -38,11 +36,9 @@ unsigned char isLeftFoot() {
 }
 
 unsigned char isRightFoot() {
-    unsigned char value = (unsigned char) ADC;
+    unsigned long value = ADC;
 
-    return value >= 126;
-
-    if (value >= 151)
+    if (value >= 975)
         return 1;
     else
         return 0;
@@ -86,13 +82,13 @@ int StepGamePlayer1(int state) {
             if (currentDistance < raceDistance) {
                 // if (currentDistance%2 == 0 && isLeftFoot())
                 if (isLeftFoot()) {
-                    PORTB = 0x01;
                     LCD_DisplayString(1, "left foot");
                     // currentDistance++;
                 } else if (isRightFoot()) {
-                    PORTB = 0x02;
                     LCD_DisplayString(1, "right foot");
                     // currentDistance++;
+                } else {
+                    LCD_DisplayString(1, "waiting");
                 }
             }
             
