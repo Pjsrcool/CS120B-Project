@@ -26,7 +26,7 @@ void ADC_init() {
     //        will trigger whenever the previous conversion completes
 }
 
-unsigned char isLeftFoot() {
+unsigned char isP1LeftFoot() {
     unsigned long value =  ADC;
 
     if (value <= 48)
@@ -35,7 +35,7 @@ unsigned char isLeftFoot() {
         return 0;
 }
 
-unsigned char isRightFoot() {
+unsigned char isP1RightFoot() {
     unsigned long value = ADC;
 
     if (value >= 975)
@@ -47,55 +47,86 @@ unsigned char isRightFoot() {
 unsigned char player1 = 0;
 unsigned char player1finish = 0;
 
+enum Start {Wait, Press, Release};
+int StartButton(int state) {
+    unsigned char button = PINA & 0x02;
+    switch(state) {
+        case Wait: 
+            if (button == 0x00)
+                state = Press;
+            else
+                state = Wait;
+            break;
+        case Press:
+            if (button == 0x02)
+                state = Release;
+            else
+                state = Press;
+            break;
+        case Release:
+            state = Wait;
+            break;
+        default: state = Wait; break;
+    }
+
+    switch(state) {
+        case Wait: break;
+        case Press: break;
+        case Release: player1 = !player1; break;
+        default: break;
+    }
+
+    return state;
+}
+
 enum StepGamePlayer1 {Off, go, finish };
 int StepGamePlayer1(int state) {
     static unsigned short currentDistance = 0;
-    static const unsigned short raceDistance = 20;
+    static const unsigned short raceDistance = 40;
+    static const unsigned char LeftSteps[41] = {1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0};
+    static const unsigned char RightSteps[41]= {0,0,1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0,1,0};
 
-    state = go;
-    // switch (state) {
-    //     case Off : 
-    //         if (player1 == 0) 
-    //             state = Off;
-    //         else {
-    //             player1finish = 0;
-    //             state = go;
-    //         }
-    //         break;
-    //     case go : 
-    //         if (currentDistance >= raceDistance)
-    //             state = finish;
-    //         else 
-    //             state = go;
-    //         break;
-    //     case finish :
-    //         state = Off;
-    //         break;
-    //     default : 
-    //         state = Off; 
-    //         break;
-    // }
+    // state = go;
+    switch (state) {
+        case Off : 
+            if (player1 == 0) 
+                state = Off;
+            else {
+                player1finish = 0;
+                state = go;
+            }
+            break;
+        case go : 
+            if (currentDistance >= raceDistance)
+                state = finish;
+            else 
+                state = go;
+            break;
+        case finish :
+            state = Off;
+            break;
+        default : 
+            state = Off; 
+            break;
+    }
 
-            unsigned char score[3] = {0,0};
+    unsigned char score[3] = {0,0};
     switch (state) {
         case go : 
             if (currentDistance < raceDistance) {
-                // if (currentDistance%2 == 0 && isLeftFoot())
-                if (isLeftFoot()) {
-                    LCD_DisplayString(1, "left foot");
-                    // currentDistance++;
-                } else if (isRightFoot()) {
-                    LCD_DisplayString(1, "right foot");
-                    // currentDistance++;
-                } else {
-                    LCD_DisplayString(1, "waiting");
-                }
+                if (isP1LeftFoot() == LeftSteps[currentDistance] && isP1RightFoot() == RightSteps[currentDistance])
+                    currentDistance++;
+                LCD_DisplayString(1,currentDistance + '0');
+                // if (isP1LeftFoot()) {
+                //     LCD_DisplayString(1, "left foot");
+                //     currentDistance++;
+                // } else if (isP1RightFoot()) {
+                //     LCD_DisplayString(1, "right foot");
+                //     currentDistance++;
+                // } else {
+                //     LCD_DisplayString(1, "waiting");
+                // }
             }
-            
-            // LCD_ClearScreen();
-            // score[0] = '0' + (unsigned char) ADC;
-            // score[1] = '-';
-            // LCD_DisplayString(4, score);
             break;
         case finish:
             player1finish = 1;
