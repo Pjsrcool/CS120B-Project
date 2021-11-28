@@ -49,7 +49,7 @@ unsigned char player1finish = 0;
 
 enum Start {Wait, Press, Release};
 int StartButton(int state) {
-    unsigned char button = PINA & 0x02;
+    unsigned char button = PINB & 0x08;
     switch(state) {
         case Wait: 
             if (button == 0x00)
@@ -58,7 +58,7 @@ int StartButton(int state) {
                 state = Wait;
             break;
         case Press:
-            if (button == 0x02)
+            if (button == 0x08)
                 state = Release;
             else
                 state = Press;
@@ -72,32 +72,43 @@ int StartButton(int state) {
     switch(state) {
         case Wait: break;
         case Press: break;
-        case Release: player1 = !player1; break;
+        case Release: 
+            if (player1 == 0) {
+                LCD_DisplayString(1,"GOOO");
+                player1 = 1;
+            } else {
+                LCD_DisplayString(1,"Push Button to Start");
+                player1 = 0;
+            }
+            break;
         default: break;
     }
 
     return state;
 }
 
+
+unsigned short P1currentDistance = 0;
+const unsigned short raceDistance = 40;
+const unsigned char LeftSteps[41] = {1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0};
+const unsigned char RightSteps[41]= {0,0,1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0,1,0};
+
 enum StepGamePlayer1 {Off, go, finish };
 int StepGamePlayer1(int state) {
-    static unsigned short currentDistance = 0;
-    static const unsigned short raceDistance = 40;
-    static const unsigned char LeftSteps[41] = {1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0};
-    static const unsigned char RightSteps[41]= {0,0,1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0,1,0};
-
-    // state = go;
     switch (state) {
         case Off : 
             if (player1 == 0) 
                 state = Off;
             else {
+                P1currentDistance = 0;
                 player1finish = 0;
                 state = go;
             }
             break;
-        case go : 
-            if (currentDistance >= raceDistance)
+        case go :
+            if (player1 == 0)
+                state = Off; 
+            else if (P1currentDistance >= raceDistance)
                 state = finish;
             else 
                 state = go;
@@ -113,10 +124,10 @@ int StepGamePlayer1(int state) {
     unsigned char score[3] = {0,0};
     switch (state) {
         case go : 
-            if (currentDistance < raceDistance) {
-                if (isP1LeftFoot() == LeftSteps[currentDistance] && isP1RightFoot() == RightSteps[currentDistance])
-                    currentDistance++;
-                LCD_DisplayString(1,currentDistance + '0');
+            if (P1currentDistance < raceDistance) {
+                if (isP1LeftFoot() == LeftSteps[P1currentDistance] && isP1RightFoot() == RightSteps[P1currentDistance])
+                    P1currentDistance++;
+                // LCD_DisplayString(1,P1currentDistance + '0');
                 // if (isP1LeftFoot()) {
                 //     LCD_DisplayString(1, "left foot");
                 //     currentDistance++;
@@ -156,8 +167,8 @@ int LCDTextTick(int state) {
 
 int main(void) {
     /* Insert DDR and PORT initializations */
-    DDRA = 0x00;// PORTA = 0x00;
-    DDRB = 0xFF;
+    DDRA = 0x00; // PORTA = 0x00;
+    DDRB = 0xF7; PORTB = 0x08;
     DDRC = 0xFF;
     DDRD = 0xff;
 
@@ -165,12 +176,19 @@ int main(void) {
     /*
     * TASKS
     */
-    int numTasks = 2;
+    int numTasks = 3;
     int i = 0;
     task tasks [numTasks];
 
+    // Start Button Task
+    tasks[i].state = -1;
+    tasks[i].period = 50;
+    tasks[i].elapsedTime = 0;
+    tasks[i].TickFct = &StartButton;
+    i++;
+
     // player1 task
-    tasks[i].state = 1;
+    tasks[i].state = -1;
     tasks[i].period = 50;
     tasks[i].elapsedTime = 0;
     tasks[i].TickFct = &StepGamePlayer1;
@@ -191,8 +209,6 @@ int main(void) {
 
     TimerSet(period);
     TimerOn();
-
-player1 = 1;
 
     while (1) {
         // LCD_DisplayString(1, "inside loop");
