@@ -128,10 +128,13 @@ int StepGameplayer2(int state) {
     }
 
     switch (state) {
+        case Off: break;
         case go : 
             if (P2currentDistance < raceDistance) {
-                if (isP2LeftFoot() == LeftSteps[P2currentDistance] && isP2RightFoot() == RightSteps[P2currentDistance])
+                if (isP2LeftFoot() == LeftSteps[P2currentDistance] && isP2RightFoot() == RightSteps[P2currentDistance]){
                     P2currentDistance++;
+                    // PORTD = 0x00;
+                }
                 // LCD_DisplayString(1,P2currentDistance + '0');
                 // if (isP2LeftFoot()) {
                 //     LCD_DisplayString(1, "left foot");
@@ -147,11 +150,10 @@ int StepGameplayer2(int state) {
         case finish:
             player2finish = 1;
             break;
-        case Off: break;
     }
     // player2finish = 1;
     if (player2finish)
-        PORTD = 0x01;
+        PORTD = 0x03; // change this later
     else
         PORTD = 0X00;
     return state;
