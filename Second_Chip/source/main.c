@@ -10,7 +10,6 @@
  * Demo Link: https://drive.google.com/file/d/13dB-wkyHkuOn36P_5kCTMYPzrd4PjjQc/view?usp=sharing
  */
 #include <avr/io.h>
-#include "../header/io.h"
 #include "../header/scheduler.h"
 #include "../header/timer.h"
 #ifdef _SIMULATE_
@@ -26,7 +25,7 @@ void ADC_init() {
     //        will trigger whenever the previous conversion completes
 }
 
-unsigned char isP1LeftFoot() {
+unsigned char isP2LeftFoot() {
     unsigned long value =  ADC;
 
     if (value <= 48)
@@ -35,7 +34,7 @@ unsigned char isP1LeftFoot() {
         return 0;
 }
 
-unsigned char isP1RightFoot() {
+unsigned char isP2RightFoot() {
     unsigned long value = ADC;
 
     if (value >= 975)
@@ -44,12 +43,13 @@ unsigned char isP1RightFoot() {
         return 0;
 }
 
-unsigned char player1 = 0;
-unsigned char player1finish = 0;
+unsigned char player2 = 0;
+unsigned char player2finish = 0;
 
 enum Start {Wait, Press, Release};
 int StartButton(int state) {
-    unsigned char button = PINB & 0x08;
+    unsigned char button = PINB & 0x01;
+
     switch(state) {
         case Wait: 
             if (button == 0x00)
@@ -58,7 +58,7 @@ int StartButton(int state) {
                 state = Wait;
             break;
         case Press:
-            if (button == 0x08)
+            if (button == 0x01)
                 state = Release;
             else
                 state = Press;
@@ -73,12 +73,14 @@ int StartButton(int state) {
         case Wait: break;
         case Press: break;
         case Release: 
-            if (player1 == 0) {
-                LCD_DisplayString(1,"GOOO");
-                player1 = 1;
+            if (player2 == 0) {
+                // LCD_DisplayString(1,"GOOO");
+                player2 = 1;
+                // PORTD = 0x04;
             } else {
-                LCD_DisplayString(1,"Push Button to Start");
-                player1 = 0;
+                // LCD_DisplayString(1,"Push Button to Start");
+                player2 = 0;
+                // PORTD = 0x00;
             }
             break;
         default: break;
@@ -88,27 +90,31 @@ int StartButton(int state) {
 }
 
 
-unsigned short P1currentDistance = 0;
+unsigned short P2currentDistance = 0;
 const unsigned short raceDistance = 40;
 const unsigned char LeftSteps[41] = {1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0};
 const unsigned char RightSteps[41]= {0,0,1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0,1,0};
 
-enum StepGamePlayer1 {Off, go, finish };
-int StepGamePlayer1(int state) {
+enum StepGameplayer2 {Off, go, finish };
+int StepGameplayer2(int state) {
+    // if (isP2RightFoot())
+    // PORTD = 0xff;
+    // else
+    // PORTD = 0X00;
     switch (state) {
         case Off : 
-            if (player1 == 0) 
+            if (player2 == 0) 
                 state = Off;
             else {
-                P1currentDistance = 0;
-                player1finish = 0;
+                P2currentDistance = 0;
+                player2finish = 0;
                 state = go;
             }
             break;
         case go :
-            if (player1 == 0)
+            if (player2 == 0)
                 state = Off; 
-            else if (P1currentDistance >= raceDistance)
+            else if (P2currentDistance >= raceDistance)
                 state = finish;
             else 
                 state = go;
@@ -121,17 +127,16 @@ int StepGamePlayer1(int state) {
             break;
     }
 
-    unsigned char score[3] = {0,0};
     switch (state) {
         case go : 
-            if (P1currentDistance < raceDistance) {
-                if (isP1LeftFoot() == LeftSteps[P1currentDistance] && isP1RightFoot() == RightSteps[P1currentDistance])
-                    P1currentDistance++;
-                // LCD_DisplayString(1,P1currentDistance + '0');
-                // if (isP1LeftFoot()) {
+            if (P2currentDistance < raceDistance) {
+                if (isP2LeftFoot() == LeftSteps[P2currentDistance] && isP2RightFoot() == RightSteps[P2currentDistance])
+                    P2currentDistance++;
+                // LCD_DisplayString(1,P2currentDistance + '0');
+                // if (isP2LeftFoot()) {
                 //     LCD_DisplayString(1, "left foot");
                 //     currentDistance++;
-                // } else if (isP1RightFoot()) {
+                // } else if (isP2RightFoot()) {
                 //     LCD_DisplayString(1, "right foot");
                 //     currentDistance++;
                 // } else {
@@ -140,43 +145,29 @@ int StepGamePlayer1(int state) {
             }
             break;
         case finish:
-            player1finish = 1;
+            player2finish = 1;
             break;
+        case Off: break;
     }
-    return state;
-}
-
-
-unsigned char LCD_Text[];
-// writes Game text to the LCD Display
-enum LCDTextStates { Display };
-int LCDTextTick(int state) {
-    static int time = 0;
-    switch (state) {
-        case Display:
-            // LCD_DisplayString(1, pot + '0');
-            // LCD_DisplayString(1, LCD_Text);
-            if (player1finish)
-                LCD_DisplayString(1,"Player 1 finished");
-            break;
-        default: state = Display; break;
-    }
-
+    // player2finish = 1;
+    if (player2finish)
+        PORTD = 0x01;
+    else
+        PORTD = 0X00;
     return state;
 }
 
 int main(void) {
     /* Insert DDR and PORT initializations */
     DDRA = 0x00; // PORTA = 0x00;
-    DDRB = 0xF7; PORTB = 0x08;
-    DDRC = 0xFF;
-    DDRD = 0xff;
+    DDRB = 0x00; PORTB = 0x01;
+    DDRD = 0xff; PORTD = 0x00;
 
     unsigned char period = 50;
     /*
     * TASKS
     */
-    int numTasks = 3;
+    int numTasks = 2;
     int i = 0;
     task tasks [numTasks];
 
@@ -187,29 +178,18 @@ int main(void) {
     tasks[i].TickFct = &StartButton;
     i++;
 
-    // player1 task
+    // player2 task
     tasks[i].state = -1;
     tasks[i].period = 50;
     tasks[i].elapsedTime = 0;
-    tasks[i].TickFct = &StepGamePlayer1;
+    tasks[i].TickFct = &StepGameplayer2;
     i++;
-
-    // LCD Text
-    tasks[i].state = -1;
-    tasks[i].period = 50;
-    tasks[i].elapsedTime = 0;
-    tasks[i].TickFct = &LCDTextTick;
-    i++;
-    // Output
-
-    LCD_init();
-    LCD_DisplayString(1, "initializing");
 
     ADC_init();
 
     TimerSet(period);
     TimerOn();
-
+    
     while (1) {
         // LCD_DisplayString(1, "inside loop");
         for(int j = 0; j < numTasks; ++j) {

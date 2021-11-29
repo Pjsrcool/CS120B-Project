@@ -121,7 +121,6 @@ int StepGamePlayer1(int state) {
             break;
     }
 
-    unsigned char score[3] = {0,0};
     switch (state) {
         case go : 
             if (P1currentDistance < raceDistance) {
@@ -146,6 +145,22 @@ int StepGamePlayer1(int state) {
     return state;
 }
 
+unsigned char player2finish = 0;
+
+enum StepGamePlayer2 {getData};
+int StepGamePlayer2(int state) {
+    unsigned char pC = PINC & 0x01;
+    switch(state) {
+        case getData:
+            state = getData;
+            player2finish = pC;
+            break;
+        default:
+            state = getData;
+            break;
+    }
+    return state;
+}
 
 unsigned char LCD_Text[];
 // writes Game text to the LCD Display
@@ -156,8 +171,12 @@ int LCDTextTick(int state) {
         case Display:
             // LCD_DisplayString(1, pot + '0');
             // LCD_DisplayString(1, LCD_Text);
-            if (player1finish)
+            if (player1finish && player2finish)
+                LCD_DisplayString(1,"Both players finished");
+            else if (player1finish)
                 LCD_DisplayString(1,"Player 1 finished");
+            else if (player2finish)
+                LCD_DisplayString(1,"Player 2 Finished");
             break;
         default: state = Display; break;
     }
@@ -169,14 +188,14 @@ int main(void) {
     /* Insert DDR and PORT initializations */
     DDRA = 0x00; // PORTA = 0x00;
     DDRB = 0xF7; PORTB = 0x08;
-    DDRC = 0xFF;
+    DDRC = 0x00;
     DDRD = 0xff;
 
     unsigned char period = 50;
     /*
     * TASKS
     */
-    int numTasks = 3;
+    int numTasks = 4;
     int i = 0;
     task tasks [numTasks];
 
@@ -192,6 +211,13 @@ int main(void) {
     tasks[i].period = 50;
     tasks[i].elapsedTime = 0;
     tasks[i].TickFct = &StepGamePlayer1;
+    i++;
+
+    // player2 task
+    tasks[i].state = -1;
+    tasks[i].period = 50;
+    tasks[i].elapsedTime = 0;
+    tasks[i].TickFct = &StepGamePlayer2;
     i++;
 
     // LCD Text
