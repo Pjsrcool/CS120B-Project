@@ -44,6 +44,7 @@ unsigned char isP1RightFoot() {
         return 0;
 }
 
+unsigned char update = 1;
 unsigned char player1 = 0;
 unsigned char player1finish = 0;
 
@@ -74,12 +75,11 @@ int StartButton(int state) {
         case Press: break;
         case Release: 
             if (player1 == 0) {
-                LCD_DisplayString(1,"GOOO");
                 player1 = 1;
             } else {
-                LCD_DisplayString(1,"Push Button to Start");
                 player1 = 0;
             }
+            update = 1;
             break;
         default: break;
     }
@@ -90,6 +90,7 @@ int StartButton(int state) {
 
 unsigned short P1currentDistance = 0;
 const unsigned short raceDistance = 40;
+const unsigned char LED[41] = {2,2,1,1,2,2,1,1,2,2,1,1,2,2,1,1,2,2,1,1,2,2,1,1,2,2,1,1,2,2,1,1,2,2,1,1,2,2,1,1,};
 const unsigned char LeftSteps[41] = {1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0};
 const unsigned char RightSteps[41]= {0,0,1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0,1,0};
 
@@ -122,24 +123,19 @@ int StepGamePlayer1(int state) {
     }
 
     switch (state) {
+        case Off:
+            PORTB = 0;
         case go : 
             if (P1currentDistance < raceDistance) {
+                PORTB = LED[P1currentDistance] & 0x03;
                 if (isP1LeftFoot() == LeftSteps[P1currentDistance] && isP1RightFoot() == RightSteps[P1currentDistance])
                     P1currentDistance++;
-                // LCD_DisplayString(1,P1currentDistance + '0');
-                // if (isP1LeftFoot()) {
-                //     LCD_DisplayString(1, "left foot");
-                //     currentDistance++;
-                // } else if (isP1RightFoot()) {
-                //     LCD_DisplayString(1, "right foot");
-                //     currentDistance++;
-                // } else {
-                //     LCD_DisplayString(1, "waiting");
-                // }
             }
             break;
         case finish:
             player1finish = 1;
+            player1 = 0;
+            update = 1;
             break;
     }
     return state;
@@ -149,11 +145,16 @@ unsigned char player2finish = 0;
 
 enum StepGamePlayer2 {getData};
 int StepGamePlayer2(int state) {
-    unsigned char pC = PINC & 0x01;
+    static unsigned char pC;
+    unsigned char old = pC;
+    pC = PINC & 0x01;
+
     switch(state) {
         case getData:
             state = getData;
             player2finish = pC;
+            if (player2finish != old)
+                update = 1;
             break;
         default:
             state = getData;
@@ -162,23 +163,50 @@ int StepGamePlayer2(int state) {
     return state;
 }
 
-unsigned char LCD_Text[];
 // writes Game text to the LCD Display
-enum LCDTextStates { Display };
+enum LCDTextStates { wait, updateDisplay, gameOver};
 int LCDTextTick(int state) {
-    static int time = 0;
+    static int pointsP1 = 0, pointsP2 = 0;
+
     switch (state) {
-        case Display:
-            // LCD_DisplayString(1, pot + '0');
-            // LCD_DisplayString(1, LCD_Text);
-            if (player1finish && player2finish)
-                LCD_DisplayString(1,"Both players finished");
-            else if (player1finish)
-                LCD_DisplayString(1,"Player 1 finished");
-            else if (player2finish)
-                LCD_DisplayString(1,"Player 2 Finished");
+        case wait:
+            if (update)
+                state = updateDisplay;
+            else
+                state = wait;
             break;
-        default: state = Display; break;
+        case updateDisplay:
+            if (pointsP1 >= 3 || pointsP2 >= 3)
+                state = gameOver;
+            else
+                state = wait;
+            break;
+        case gameOver: break;
+        default: state = wait; break;
+    }
+
+    switch (state) {
+        case wait:
+            break;
+        case updateDisplay:
+            if (player1finish && player2finish)
+                LCD_DisplayString(1, "Both players    finished");
+            else if (player1finish) {
+                LCD_DisplayString(1, "P1 finished     first! +1 pt!");
+                pointsP1++;
+            } else if (player2finish) {
+                LCD_DisplayString(1, "P2 finished     first! +1 pt!");
+                pointsP2++;
+            } else if (player1 == 1 && !player1finish && !player2finish) {
+                LCD_DisplayString(1, "Goooooo");
+            } else if (player1 == 0)
+                LCD_DisplayString(1, "Push Button to  start.");
+            
+            update = 0;
+            break;
+        case gameOver:
+            if (pointsP1 > pointsP2)
+                LCD_DisplayString(1, "P1 wins! Reset  power please");
     }
 
     return state;

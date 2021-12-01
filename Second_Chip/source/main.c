@@ -92,15 +92,13 @@ int StartButton(int state) {
 
 unsigned short P2currentDistance = 0;
 const unsigned short raceDistance = 40;
+const unsigned char LED[41] = {4,4,2,2,4,4,2,2,4,4,2,2,4,4,2,2,4,4,2,2,4,4,2,2,4,4,2,2,4,4,2,2,4,4,2,2,4,4,2,2};
 const unsigned char LeftSteps[41] = {1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0};
 const unsigned char RightSteps[41]= {0,0,1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0,1,0};
 
 enum StepGameplayer2 {Off, go, finish };
 int StepGameplayer2(int state) {
-    // if (isP2RightFoot())
-    // PORTD = 0xff;
-    // else
-    // PORTD = 0X00;
+    unsigned char step, end;
     switch (state) {
         case Off : 
             if (player2 == 0) 
@@ -128,34 +126,30 @@ int StepGameplayer2(int state) {
     }
 
     switch (state) {
-        case Off: break;
+        case Off: 
+            step = 0;
+            break;
         case go : 
             if (P2currentDistance < raceDistance) {
+                step = LED[P2currentDistance] & 0x06;
                 if (isP2LeftFoot() == LeftSteps[P2currentDistance] && isP2RightFoot() == RightSteps[P2currentDistance]){
                     P2currentDistance++;
                     // PORTD = 0x00;
                 }
-                // LCD_DisplayString(1,P2currentDistance + '0');
-                // if (isP2LeftFoot()) {
-                //     LCD_DisplayString(1, "left foot");
-                //     currentDistance++;
-                // } else if (isP2RightFoot()) {
-                //     LCD_DisplayString(1, "right foot");
-                //     currentDistance++;
-                // } else {
-                //     LCD_DisplayString(1, "waiting");
-                // }
             }
             break;
         case finish:
             player2finish = 1;
+            player2 = 0;
             break;
     }
     // player2finish = 1;
     if (player2finish)
-        PORTD = 0x03; // change this later
+        end = 0x01; // change this later
     else
-        PORTD = 0X00;
+        end = 0X00;
+
+    PORTD = step | end;
     return state;
 }
 
