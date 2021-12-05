@@ -46,7 +46,9 @@ unsigned char isP1RightFoot() {
 
 unsigned char update = 1;
 unsigned char player1 = 0;
+unsigned char player2 = 0;
 unsigned char player1finish = 0;
+unsigned char player2finish = 0;
 
 enum Start {Wait, Press, Release};
 int StartButton(int state) {
@@ -76,8 +78,10 @@ int StartButton(int state) {
         case Release: 
             if (player1 == 0) {
                 player1 = 1;
+                player2 = 1;
             } else {
                 player1 = 0;
+                player2 = 0;
             }
             update = 1;
             break;
@@ -109,7 +113,7 @@ int StepGamePlayer1(int state) {
         case go :
             if (player1 == 0)
                 state = Off; 
-            else if (P1currentDistance >= raceDistance)
+            else if (P1currentDistance >= raceDistance || player2finish)
                 state = finish;
             else 
                 state = go;
@@ -125,8 +129,9 @@ int StepGamePlayer1(int state) {
     switch (state) {
         case Off:
             PORTB = 0;
+            break;
         case go : 
-            if (P1currentDistance < raceDistance) {
+            if (P1currentDistance < raceDistance || player2finish) {
                 PORTB = LED[P1currentDistance] & 0x03;
                 if (isP1LeftFoot() == LeftSteps[P1currentDistance] && isP1RightFoot() == RightSteps[P1currentDistance])
                     P1currentDistance++;
@@ -135,13 +140,14 @@ int StepGamePlayer1(int state) {
         case finish:
             player1finish = 1;
             player1 = 0;
+            player2 = 0;
             update = 1;
             break;
     }
     return state;
 }
 
-unsigned char player2finish = 0;
+
 
 enum StepGamePlayer2 {getData};
 int StepGamePlayer2(int state) {
@@ -160,6 +166,7 @@ int StepGamePlayer2(int state) {
             state = getData;
             break;
     }
+    PORTC = player2 << 1;
     return state;
 }
 

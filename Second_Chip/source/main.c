@@ -46,44 +46,18 @@ unsigned char isP2RightFoot() {
 unsigned char player2 = 0;
 unsigned char player2finish = 0;
 
-enum Start {Wait, Press, Release};
+enum Start {read};
 int StartButton(int state) {
-    unsigned char button = PINB & 0x01;
+    unsigned char signal = PINB & 0x01;
 
     switch(state) {
-        case Wait: 
-            if (button == 0x00)
-                state = Press;
-            else
-                state = Wait;
+        case read: 
+            player2 = signal;
+            state = read;
             break;
-        case Press:
-            if (button == 0x01)
-                state = Release;
-            else
-                state = Press;
+        default: 
+            state = read;
             break;
-        case Release:
-            state = Wait;
-            break;
-        default: state = Wait; break;
-    }
-
-    switch(state) {
-        case Wait: break;
-        case Press: break;
-        case Release: 
-            if (player2 == 0) {
-                // LCD_DisplayString(1,"GOOO");
-                player2 = 1;
-                // PORTD = 0x04;
-            } else {
-                // LCD_DisplayString(1,"Push Button to Start");
-                player2 = 0;
-                // PORTD = 0x00;
-            }
-            break;
-        default: break;
     }
 
     return state;
@@ -143,9 +117,9 @@ int StepGameplayer2(int state) {
             player2 = 0;
             break;
     }
-    // player2finish = 1;
+    
     if (player2finish)
-        end = 0x01; // change this later
+        end = 0x01;
     else
         end = 0X00;
 
