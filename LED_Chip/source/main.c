@@ -52,16 +52,16 @@ unsigned char player2finish = 0;
 
 enum Start {Wait, Press, Release};
 int StartButton(int state) {
-    unsigned char button = PINB & 0x04;
+    unsigned char button = PINC & 0x80;
     switch(state) {
         case Wait: 
-            if (button == 0x00)
+            if (button == 0x80)
                 state = Press;
             else
                 state = Wait;
             break;
         case Press:
-            if (button == 0x04)
+            if (button == 0x00)
                 state = Release;
             else
                 state = Press;
@@ -78,7 +78,7 @@ int StartButton(int state) {
         case Wait: break;
         case Press: break;
         case Release: 
-            if (player1 == 0) {
+            if (player1 == 0 && player2 == 0) {
                 player1 = 1;
                 player2 = 1;
             } else {
@@ -133,7 +133,7 @@ int StepGamePlayer1(int state) {
             PORTB = 0;
             break;
         case go : 
-            if (P1currentDistance < raceDistance || !player2finish) {
+            if (P1currentDistance < raceDistance && !player2finish) {
                 PORTB = LED[P1currentDistance] & 0x03;
                 if (isP1LeftFoot() == LeftSteps[P1currentDistance] && isP1RightFoot() == RightSteps[P1currentDistance])
                     P1currentDistance++;
@@ -152,7 +152,7 @@ int StepGamePlayer1(int state) {
 
 enum StepGamePlayer2 {getData};
 int StepGamePlayer2(int state) {
-    static unsigned char pC;
+    static unsigned char pC = 0;
     unsigned char old = pC;
     pC = PINC & 0x01;
 
@@ -203,14 +203,14 @@ int LCDTextTick(int state) {
             if (player1finish && player2finish)
                 LCD_DisplayString(1, "Both players    finished");
             else if (player1finish) {
-                LCD_DisplayString(1, "P1 finished     first! +1 pt!");
                 pointsP1++;
+                LCD_DisplayString(1, "P1 finished     first! +1 pt!");
             } else if (player2finish) {
-                LCD_DisplayString(1, "P2 finished     first! +1 pt!");
                 pointsP2++;
+                LCD_DisplayString(1, "P2 finished     first! +1 pt!");
             } else if (player1 == 1 && player2 == 1 && !player1finish && !player2finish) {
                 LCD_DisplayString(1, "Goooooo");
-            } else if (player1 == 0)
+            } else if (player1 == 0 && player2 == 0)
                 LCD_DisplayString(1, "Push Button to  start.");
             
             update = 0;
@@ -231,11 +231,13 @@ int LCDTextTick(int state) {
 int main(void) {
     /* Insert DDR and PORT initializations */
     DDRA = 0x00; // PORTA = 0x00;
-    DDRB = 0xFB; PORTB = 0x04;
-    DDRC = 0x02; PORTC = 0X00;
+    // DDRB = 0xFB; PORTB = 0x04;
+    DDRB = 0xff;
+    // DDRC = 0x02; PORTC = 0X00;
+    DDRC = 0x7E; 
     DDRD = 0xff;
 
-    unsigned char period = 50;
+    unsigned char period = 10;
     /*
     * TASKS
     */
@@ -245,7 +247,7 @@ int main(void) {
 
     // Start Button Task
     tasks[i].state = -1;
-    tasks[i].period = 50;
+    tasks[i].period = 100;
     tasks[i].elapsedTime = 0;
     tasks[i].TickFct = &StartButton;
     i++;
@@ -259,7 +261,7 @@ int main(void) {
 
     // player2 task
     tasks[i].state = -1;
-    tasks[i].period = 50;
+    tasks[i].period = 10;
     tasks[i].elapsedTime = 0;
     tasks[i].TickFct = &StepGamePlayer2;
     i++;

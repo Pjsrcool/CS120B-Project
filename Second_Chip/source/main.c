@@ -70,9 +70,11 @@ const unsigned char LED[41] = {4,4,2,2,4,4,2,2,4,4,2,2,4,4,2,2,4,4,2,2,4,4,2,2,4
 const unsigned char LeftSteps[41] = {1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0};
 const unsigned char RightSteps[41]= {0,0,1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0,1,0};
 
+
 enum StepGameplayer2 {Off, go, finish };
 int StepGameplayer2(int state) {
-    static unsigned char step, end;
+    unsigned char step, end;
+
     switch (state) {
         case Off : 
             if (player2 == 0) 
@@ -103,37 +105,31 @@ int StepGameplayer2(int state) {
         case Off: 
             step = 0;
             break;
-        case go : 
+        case go: 
             if (P2currentDistance < raceDistance) {
                 step = LED[P2currentDistance] & 0x06;
                 if (isP2LeftFoot() == LeftSteps[P2currentDistance] && isP2RightFoot() == RightSteps[P2currentDistance]){
                     P2currentDistance++;
-                    // PORTD = 0x00;
                 }
             }
             break;
         case finish:
             player2finish = 1;
-            player2 = 0;
+            // player2 = 0;
             break;
     }
-    
-    if (player2finish)
-        end = 0x01;
-    else
-        end = 0X00;
 
-    PORTD = step | end;
+    PORTD = step | player2finish;
     return state;
 }
 
 int main(void) {
     /* Insert DDR and PORT initializations */
     DDRA = 0x00; // PORTA = 0x00;
-    DDRB = 0x00; PORTB = 0x01;
+    DDRB = 0x00; PORTB = 0x00;
     DDRD = 0xff; PORTD = 0x00;
 
-    unsigned char period = 50;
+    unsigned char period = 25;
     /*
     * TASKS
     */
@@ -143,7 +139,7 @@ int main(void) {
 
     // Start Button Task
     tasks[i].state = -1;
-    tasks[i].period = 50;
+    tasks[i].period = 25;
     tasks[i].elapsedTime = 0;
     tasks[i].TickFct = &StartButton;
     i++;
