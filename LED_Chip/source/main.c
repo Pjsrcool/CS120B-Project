@@ -52,7 +52,7 @@ unsigned char player2finish = 0;
 
 enum Start {Wait, Press, Release};
 int StartButton(int state) {
-    unsigned char button = PINB & 0x08;
+    unsigned char button = PINB & 0x04;
     switch(state) {
         case Wait: 
             if (button == 0x00)
@@ -61,7 +61,7 @@ int StartButton(int state) {
                 state = Wait;
             break;
         case Press:
-            if (button == 0x08)
+            if (button == 0x04)
                 state = Release;
             else
                 state = Press;
@@ -69,7 +69,9 @@ int StartButton(int state) {
         case Release:
             state = Wait;
             break;
-        default: state = Wait; break;
+        default: 
+            state = Wait;
+            break;
     }
 
     switch(state) {
@@ -138,7 +140,8 @@ int StepGamePlayer1(int state) {
             }
             break;
         case finish:
-            player1finish = 1;
+            if (P1currentDistance >= raceDistance)
+                player1finish = 1;
             player1 = 0;
             player2 = 0;
             update = 1;
@@ -146,8 +149,6 @@ int StepGamePlayer1(int state) {
     }
     return state;
 }
-
-
 
 enum StepGamePlayer2 {getData};
 int StepGamePlayer2(int state) {
@@ -173,7 +174,8 @@ int StepGamePlayer2(int state) {
 // writes Game text to the LCD Display
 enum LCDTextStates { wait, updateDisplay, gameOver};
 int LCDTextTick(int state) {
-    static int pointsP1 = 0, pointsP2 = 0;
+    static int pointsP1 = 0;
+    static int pointsP2 = 0;
 
     switch (state) {
         case wait:
@@ -204,7 +206,7 @@ int LCDTextTick(int state) {
             } else if (player2finish) {
                 LCD_DisplayString(1, "P2 finished     first! +1 pt!");
                 pointsP2++;
-            } else if (player1 == 1 && !player1finish && !player2finish) {
+            } else if (player1 == 1 && player2 == 1 && !player1finish && !player2finish) {
                 LCD_DisplayString(1, "Goooooo");
             } else if (player1 == 0)
                 LCD_DisplayString(1, "Push Button to  start.");
@@ -214,6 +216,10 @@ int LCDTextTick(int state) {
         case gameOver:
             if (pointsP1 > pointsP2)
                 LCD_DisplayString(1, "P1 wins! Reset  power please");
+            else
+                LCD_DisplayString(1, "P2 wins! Reset  power please");
+            update = 0;
+            break;
     }
 
     return state;
@@ -222,8 +228,8 @@ int LCDTextTick(int state) {
 int main(void) {
     /* Insert DDR and PORT initializations */
     DDRA = 0x00; // PORTA = 0x00;
-    DDRB = 0xF7; PORTB = 0x08;
-    DDRC = 0x00;
+    DDRB = 0xFB; PORTB = 0x04;
+    DDRC = 0x02; PORTC = 0X00;
     DDRD = 0xff;
 
     unsigned char period = 50;
