@@ -133,7 +133,7 @@ int StepGamePlayer1(int state) {
             PORTB = 0;
             break;
         case go : 
-            if (P1currentDistance < raceDistance || player2finish) {
+            if (P1currentDistance < raceDistance || !player2finish) {
                 PORTB = LED[P1currentDistance] & 0x03;
                 if (isP1LeftFoot() == LeftSteps[P1currentDistance] && isP1RightFoot() == RightSteps[P1currentDistance])
                     P1currentDistance++;
@@ -172,7 +172,7 @@ int StepGamePlayer2(int state) {
 }
 
 // writes Game text to the LCD Display
-enum LCDTextStates { wait, updateDisplay, gameOver};
+enum LCDTextStates { wait, updateDisplay, gameOver, nothing};
 int LCDTextTick(int state) {
     static int pointsP1 = 0;
     static int pointsP2 = 0;
@@ -190,7 +190,9 @@ int LCDTextTick(int state) {
             else
                 state = wait;
             break;
-        case gameOver: break;
+        case gameOver: 
+            state = nothing;
+            break;
         default: state = wait; break;
     }
 
@@ -220,6 +222,7 @@ int LCDTextTick(int state) {
                 LCD_DisplayString(1, "P2 wins! Reset  power please");
             update = 0;
             break;
+        case nothing: break;
     }
 
     return state;

@@ -72,7 +72,7 @@ const unsigned char RightSteps[41]= {0,0,1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0
 
 enum StepGameplayer2 {Off, go, finish };
 int StepGameplayer2(int state) {
-    unsigned char step, end;
+    static unsigned char step, end;
     switch (state) {
         case Off : 
             if (player2 == 0) 
